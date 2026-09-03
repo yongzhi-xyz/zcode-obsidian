@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck port scripts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck port/wsl/*.sh
+
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install -g markdownlint-cli
+      - name: lint own docs (upstream vendored, excluded)
+        run: markdownlint '**/*.md' --ignore 'upstream/**'
+
+  installer-syntax:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse install.ps1 (PS 5.1 compatible, ASCII check)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $raw = Get-Content port/skills/install.ps1 -Raw
+          [void][scriptblock]::Create($raw)
+          $bytes = [System.IO.File]::ReadAllBytes('port/skills/install.ps1')
+          $nonAscii = ($bytes | Where-Object { $_ -gt 127 }).Count
+          if ($nonAscii -gt 0) { throw "install.ps1 must stay ASCII-only ($nonAscii non-ASCII bytes)" }
+          Write-Output 'syntax ok, ascii ok'
