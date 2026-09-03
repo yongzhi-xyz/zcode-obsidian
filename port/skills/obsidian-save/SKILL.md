@@ -35,7 +35,8 @@ wsl -d Ubuntu -- python3 ~/repos/zcode-obsidian/upstream/scripts/claude-obsidian
 
 bundle 要点：`schema: claude-obsidian.transaction.v1`；`operation_type: save`；`operation_id` 形如 `save-YYYYMMDD-<slug>`；`expected_hashes` 里每个目标记录当前 SHA-256（新建为 null，替换为现哈希——用 `wsl sha256sum ~/vaults/kb/<path>` 算）；每个 write 带 `content` 与其 SHA-256；`address_requests` 与 `source_manifest_updates` 留空。
 
-耦合写入：
+耦合写入（四件缺一不可）：
+
 - 选定笔记（create 或审查过的 replace）
 - `wiki/index.md` 对应区块加条目
 - `wiki/log.md` 顶部加一条操作记录

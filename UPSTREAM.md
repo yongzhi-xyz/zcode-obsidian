@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 |---|---|
-| 上游项目 | https://github.com/AgriciDaniel/claude-obsidian |
+| 上游项目 | <https://github.com/AgriciDaniel/claude-obsidian> |
 | vendored 版本 | **v2.1.1**（plugin.json 与 CHANGELOG 一致） |
 | 获取方式 | GitHub ZIP 下载解压（无 .git 历史） |
 | vendored 位置 | `upstream/`（排除 `__pycache__`/`*.pyc` 运行时产物） |
@@ -18,5 +18,5 @@
 
 ## 关注上游更新
 
-- Releases 订阅：https://github.com/AgriciDaniel/claude-obsidian/releases.atom
+- Releases 订阅：<https://github.com/AgriciDaniel/claude-obsidian/releases.atom>
 - 重点关注接口面：`scripts/claude-obsidian.py` 的 CLI 子命令签名、`config/*.json` 的 schema、`skills/**/SKILL.md` 的规程变化。

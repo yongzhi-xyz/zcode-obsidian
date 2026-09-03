@@ -8,9 +8,9 @@
 |---|---|---|---|
 | 1 | SKILL.md 的 `PRODUCT_ROOT` 推导 | ✅ 15 技能全部走 WSL 桥 | 改为 Zcode 插件目录结构 + 经 `port/wsl/kb.sh` 桥接 |
 | 2 | 检索前缀 Tier 2 依赖 `claude -p` | ✅ 固定 --no-llm | 固定 `--no-llm`（本地合成前缀，零外发）或接 Zcode 等价物 |
-| 3 | hooks 适配 | ✅ SessionStart 热上下文注入(config.json process 钩子,已双侧验证) |
-| 4 | agents 子代理模板 | ✅ port/agents/{verifier,wiki-ingest,wiki-lint}.md |
-| 5 | 插件清单 | 待做（当前以用户级技能目录安装，已可用） |
+| 3 | hooks 适配 | ✅ SessionStart 热上下文注入(config.json process 钩子,已双侧验证) | — |
+| 4 | agents 子代理模板 | ✅ port/agents/{verifier,wiki-ingest,wiki-lint}.md | — |
+| 5 | 插件清单 | 待做（当前以用户级技能目录安装，已可用） | — |
 
 ## 技能映射
 
