@@ -9,7 +9,7 @@ description: "把用户明确选定保存的对话结论/决策/洞察/总结存
 
 ## 准备
 
-1. 读 `wiki/hot.md`、`wiki/index.md`（经 `\\wsl.localhost\<distro>\home\<user>\vaults\kb\wiki\...`，`<distro>`/`<user>` 由安装器替换为实际值），最多再读 5 篇直接相关页面。
+1. 读 `wiki/hot.md`、`wiki/index.md`（经 `\\wsl.localhost\<distro>\home\<user>\vaults\kb\wiki\...`，distro/user 占位符已由安装器替换为实际值），最多再读 5 篇直接相关页面。
 2. **先查重**：知识库已有等价笔记就提议小幅更新而非新建；替换既有规范笔记需用户明确批准。
 3. 选最小笔记类型：synthesis（综合）/ concept（概念）/ decision（决策）/ session（会话总结）。文件按 generic 模式路由到 `wiki/sessions/`、`wiki/concepts/` 等。
 4. 材料无长期价值或已充分覆盖时，如实报告并提供 no-op 选项；用户坚持则照存。

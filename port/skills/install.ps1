@@ -20,6 +20,7 @@ param(
 )
 
 if (-not $SkillsSource) { $SkillsSource = $PSScriptRoot }
+if (-not $Destination) { Write-Output "ERROR: destination is empty"; exit 1 }
 
 $names = @(
   "obsidian-wiki", "obsidian-save", "obsidian-ingest", "obsidian-query", "obsidian-lint",
@@ -61,23 +62,29 @@ if ($WslDistro -and $WslUser) {
 }
 
 New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+if (-not (Test-Path $Destination)) { Write-Output "ERROR: cannot create destination: $Destination"; exit 1 }
 
 foreach ($n in $names) {
   $src = Join-Path $SkillsSource $n
   if (-not (Test-Path $src)) { Write-Output "skip (missing): $n"; continue }
   $p = Join-Path $Destination $n
+  if (-not $p) { Write-Output "ERROR: bad destination for $n"; exit 1 }
   if (Test-Path $p) { Remove-Item $p -Recurse -Force }
-  Copy-Item $src $p -Recurse
+  try { Copy-Item $src $p -Recurse -ErrorAction Stop } catch {
+    Write-Output "ERROR: install failed for ${n}: $($_.Exception.Message)"; exit 1
+  }
   Write-Output "installed: $n"
 }
 
 # Substitute <distro>/<user> placeholders in installed skill docs.
+# Literal .Replace() only - regex replacement side would double the backslashes.
 if ($uncVault) {
-  $pattern = '\\\\wsl\.localhost\\<distro>\\home\\<user>\\' + ($vaultRel -replace '/', '\\')
+  $vaultRelWin = $vaultRel -replace '/', '\'
+  $ph = '\\wsl.localhost\<distro>\home\<user>\' + $vaultRelWin
   foreach ($md in (Get-ChildItem $Destination -Recurse -Filter *.md)) {
     $text = Get-Content $md.FullName -Raw
     if ($text -and $text.Contains("<distro>")) {
-      $text = $text -replace $pattern, ($uncVault -replace '\\', '\\')
+      $text = $text.Replace($ph, $uncVault)
       Set-Content -Path $md.FullName -Value $text -Encoding UTF8 -NoNewline
     }
   }
