@@ -1,6 +1,6 @@
 # zcode-obsidian 使用与维护手册
 
-> 版本 1.0（2026-09-03）· 适用于 zcode-obsidian v0.1（上游 claude-obsidian v2.1.1）
+> 版本 1.1（2026-09-05）· 适用于 zcode-obsidian v0.1+（上游 claude-obsidian v2.1.1）
 > 本文是唯一真源，存于仓库 `docs/USER-GUIDE.zh.md`，全文镜像于知识库 `wiki/concepts/zcode-obsidian 使用手册`。
 
 ---
@@ -17,12 +17,12 @@ zcode-obsidian 是 Zcode 的 AI 知识库插件化方案：把开源项目 [clau
 Windows 桌面
 ├── ZCode ─────────── 日常入口:15 个 obsidian-* 技能 + SessionStart 自动上下文
 ├── Obsidian KB ───── 可视化(WSLg 渲染的 Linux 版 1.13.7,桌面快捷方式「Obsidian KB」)
-└── GitHub yongzhi-xyz/zcode-obsidian(私有) ── 代码资产:upstream/ vendored + port/ 移植层
+└── GitHub yongzhi-xyz/zcode-obsidian(公开) ── 代码资产:upstream/ vendored + port/ 移植层
          │ 全部落在 WSL Ubuntu 22.04(Python 3.14)
          ├── ~/repos/zcode-obsidian     代码单源(upstream/ 即运行副本)
          │   ├── port/wsl/kb.sh         WSL 桥(所有引擎调用的统一入口)
          │   ├── port/skills/           15 个 Zcode 技能(真源,install.ps1 装配)
-         │   ├── port/hooks/            SessionStart 上下文注入
+         │   ├── port/hooks/            SessionStart 上下文注入 + Stop 悬空事务提醒
          │   └── port/agents/           3 个子代理提示词模板
          └── ~/vaults/kb                知识资产(唯一不可再生的东西)
 ```
@@ -92,6 +92,37 @@ wsl -d Ubuntu -- bash ~/repos/zcode-obsidian/port/wsl/kb.sh checkpoint <OPERATIO
 ```
 
 把一笔已完成事务落成**精确对应**的 git 提交（事务结果哈希+树哈希双校验）。前提：vault 里已有基线提交（初始化完成后手动做一次全量提交即可）。重要操作后做一次，历史即清晰。
+
+### 2.10 Windows 终端快捷入口（v1.1 新增）
+
+PowerShell profile（`$PROFILE`）内置两个函数，已开终端需重开一次加载：
+
+| 命令 | 作用 |
+|---|---|
+| `kb <子命令>` | 直通 WSL 桥：`kb doctor`、`kb lint`、`kb checkpoint <op-id>` 等 |
+| `kbg` | 体检套餐：doctor + lint 一口气跑完 |
+
+无 PowerShell 环境时可用 `port/wsl/kb.cmd <子命令>`（已去除登录 shell 依赖，冷启动更快）。
+
+### 2.11 兼用其他 AI Agent（v1.1 新增）
+
+引擎与事务模型是 Agent 无关的：**写入安全由哈希审批在引擎层强制，与哪个 Agent 发起无关**。上游自带 5 个 host 的技能安装器（在 `upstream/` 内运行）：
+
+```bash
+bash bin/setup-multi-agent.sh --check    # 预览(默认 dry-run)
+bash bin/setup-multi-agent.sh --apply    # codex/opencode/gemini 用户级链接
+bash bin/setup-multi-agent.sh --host cursor --host windsurf --workspace <路径> --apply
+```
+
+清单外 Agent 按五级决策树逐级下探，零开发：
+
+| 级 | Agent 具备 | 做法 |
+|---|---|---|
+| L1 | 认 SKILL.md（Agent Skills 兼容） | 手动 per-skill symlink 进其技能目录（上游 install-guide 官方支持；`~/.agents/skills/` 等为多家汇合点） |
+| L2 | 只认指令文件（AGENTS.md 类） | 放 3 行 bootstrap：vault 路径 + kb 入口 + 事务规则 |
+| L3 | 有本地 shell | 指令文件教它调 `kb.sh` |
+| L4 | 只有 MCP | 现成通用 shell-MCP 桥 |
+| L5 | 云端 Agent（碰不到本地文件） | 反转方向：产出丢 `inbox/` 走摄入，溯源标 provisional |
 
 ---
 
@@ -168,7 +199,7 @@ wsl -d Ubuntu -- bash ~/repos/zcode-obsidian/port/wsl/kb.sh checkpoint <OPERATIO
 | 分发 | `.claude-plugin` 插件/marketplace | 独立仓库 vendored + `port/`；技能装用户级 `~/.zcode/skills/` |
 | 引擎调用 | 技能内直接 `python3` | 统一经 `port/wsl/kb.sh`（自动选定 vault） |
 | 检索前缀 | 三级：Anthropic API/`claude -p`/本地合成 | 固定本地合成（`--no-llm`，零外发） |
-| hooks | Claude 事件 + `${CLAUDE_PLUGIN_ROOT}` | Zcode 7 事件 schema，process 型钩子经 wsl.exe 调桥 |
+| hooks | Claude 事件 + `${CLAUDE_PLUGIN_ROOT}` | Zcode 7 事件 schema，process 型钩子经 wsl.exe 调桥（已用 SessionStart + Stop） |
 | 子代理 | Claude Code agents 格式 | `port/agents/*.md` Zcode Agent 提示词模板 |
 | 平台 | macOS/Linux/WSL | Windows 宿主 + WSL 全能力（含 WSLg 桌面） |
 | 插件清单 | `.claude-plugin/plugin.json` | 暂无（用户级技能目录已可用；打包待做） |
@@ -197,9 +228,18 @@ wsl -d Ubuntu -- bash ~/repos/zcode-obsidian/port/wsl/kb.sh checkpoint <OPERATIO
 | hook 没触发 | config.json 被改动 | 检查 `hooks.enabled: true` 与 process 段完整 |
 | exit 75 | vault 被并发修改 | 正常防护：重读重建 bundle 再走一遍 |
 | 中文检索不准 | 索引过期 | 跑 obsidian-retrieve 的构建三连 |
+| 语义重排/语义查重不可用 | ollama serve 未启动 | 登录 shell 会自动拉起（`.profile` 守卫）；或手动 `~/.local/bin/ollama serve`。不处理也不影响 BM25 检索（自动降级） |
 
 ### 6.4 已知边界
 
 - 原生 Windows 对 vault 只读（引擎设计使然，写必须 WSL）。
 - 手机同步未配置（已明确推迟；方案已定：Remotely Save + WebDAV/坚果云，排除 `.vault-meta/`）。
 - 插件化打包未做（当前用户级技能目录方式完全可用）。
+
+### 6.5 可选：本地语义能力（Ollama，v1.1 新增）
+
+安装 Ollama + 嵌入模型后解锁两件事：检索余弦重排（`bm25+rerank:cosine:nomic-embed-text`）与页面语义查重（`scripts/tiling-check.py`，全量运行需先 `bin/setup-dragonscale.sh` 校准阈值）。Ollama 不在时检索自动降级纯 BM25，无功能损失、只有排序差异。
+
+- **免 sudo 安装**：GitHub Releases 下载 `ollama-linux-amd64.tar.zst`（官方直链已失效，走 Releases API 取资产名）→ Python ≥3.14 标准库 tarfile 原生支持 zst，解压到 `~/.local` → `~/.local/bin/ollama pull nomic-embed-text`
+- **守护启动**：`~/.profile` 追加"未运行则后台拉起"守卫段，登录 shell 自动生效（本项目已配置）
+- **无需 Ollama 的相邻工具**：`scripts/boundary-score.py --top 10`（确定性只读，按图谱+时效提议值得再研究的页面）
